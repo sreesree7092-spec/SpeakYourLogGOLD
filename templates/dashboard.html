@@ -1,0 +1,230 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Speak Your Log | Dashboard</title>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.6/dist/purify.min.js"></script>
+</head>
+
+<body>
+    <header class="topbar">
+        <a class="brand" href="{{ url_for('dashboard') }}">✦ Speak Your Log</a>
+
+        <div class="topbar-right">
+            <span class="welcome">Welcome, {{ user.name }}!</span>
+            <a class="logout-link" href="{{ url_for('logout') }}">Logout</a>
+        </div>
+    </header>
+
+    <main class="dashboard">
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% for category, message in messages %}
+                <div class="message {{ category }}">{{ message }}</div>
+            {% endfor %}
+        {% endwith %}
+
+        <section class="hero">
+            <span class="eyebrow">YOUR PERSONAL GROWTH SPACE</span>
+            <h1>Every day is a <span>new beginning.</span></h1>
+            <p>Speak about your day, solve problems, and track your progress.</p>
+        </section>
+        <a href="{{ url_for('weekly_report') }}">
+    ✦ View Weekly AI Progress Report
+</a>
+
+        <section class="stats-grid">
+            <article class="stat-card">
+                <span class="stat-label">Total Logs</span>
+                <strong>{{ total_logs }}</strong>
+                <p>Your journey, recorded.</p>
+            </article>
+
+            <article class="stat-card">
+                <span class="stat-label">Your Goal</span>
+                <strong class="goal-value">{{ user.goal }}</strong>
+                <p>One step at a time.</p>
+            </article>
+
+            <article class="stat-card">
+                <span class="stat-label">Your Field</span>
+                <strong class="goal-value">{{ user.user_field }}</strong>
+                <p>Growing in your own direction.</p>
+            </article>
+        </section>
+
+        <section class="content-grid">
+
+            <article class="panel log-panel">
+                <div class="panel-heading">
+                    <div>
+                        <span class="eyebrow">DAILY REFLECTION</span>
+                        <h2>How was your day?</h2>
+                    </div>
+                    <span class="panel-icon">✎</span>
+                </div>
+
+                <p class="muted">
+                    Write or speak in your own words. Review before saving.
+                </p>
+
+                <form method="POST" action="{{ url_for('save_log') }}">
+                    <label for="log_text">Your daily log</label>
+
+                    <textarea
+                        id="log_text"
+                        name="log_text"
+                        rows="6"
+                        placeholder="Today, I tried to...&#10;One challenge I faced was...&#10;Tomorrow, I want to..."
+                        required
+                    ></textarea>
+
+                    <div class="voice-controls">
+                        <button type="button" id="start-log-mic" class="secondary-button">
+                            🎤 Speak your log
+                        </button>
+
+                        <button type="button" id="stop-log-mic" class="secondary-button">
+                            ⏹ Stop
+                        </button>
+                    </div>
+
+                    <p id="log-voice-status" class="form-note" aria-live="polite">
+                        You can type or use your microphone.
+                    </p>
+
+                    <label class="confirm-label">
+                        <input type="checkbox" name="confirm_save" value="yes" required>
+                        I reviewed this entry and want to save it.
+                    </label>
+
+                    <button type="submit" class="primary-button">Save My Log</button>
+                </form>
+            </article>
+
+            <article class="panel history-panel">
+                <div class="panel-heading">
+                    <div>
+                        <span class="eyebrow">YOUR JOURNEY</span>
+                        <h2>Recent Logs</h2>
+                    </div>
+                    <span class="panel-icon">◷</span>
+                </div>
+
+                {% if logs %}
+                    <div class="log-list">
+                        {% for log in logs %}
+                            <article class="log-entry">
+                                <span class="log-date">{{ log.created_at }}</span>
+                                <p>{{ log.content }}</p>
+                            </article>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="empty-state">
+                        <span class="empty-icon">✧</span>
+                        <h3>Your journey starts here</h3>
+                        <p>Your saved daily reflections will appear here.</p>
+                    </div>
+                {% endif %}
+            </article>
+
+        </section>
+
+        <section class="panel ai-panel">
+            <div class="panel-heading">
+                <div>
+                    <span class="eyebrow">YOUR AI COMPANION</span>
+                    <h2>Let's solve it together</h2>
+                </div>
+                <span class="panel-icon">✦</span>
+            </div>
+
+            <p class="muted">
+                Tell the AI what problem you are facing. It can ask follow-up
+                questions and help you plan your next step.
+            </p>
+
+            <form
+                method="POST"
+                action="{{ url_for('upload_pdf') }}"
+                enctype="multipart/form-data"
+                class="upload-form"
+            >
+                <label for="pdf_file">Upload a PDF to discuss with AI</label>
+
+                <input
+                    id="pdf_file"
+                    type="file"
+                    name="pdf_file"
+                    accept=".pdf,application/pdf"
+                    required
+                >
+
+                <button type="submit" class="secondary-button">
+                    📄 Upload PDF
+                </button>
+
+                <p class="form-note">
+                    Maximum file size: 10 MB. Text-based PDFs only.
+                </p>
+
+                {% if session.get('document_name') %}
+                    <p class="form-note">
+                        Current document: {{ session.get('document_name') }}
+                    </p>
+                {% endif %}
+            </form>
+
+            <!-- JS creates the greeting and chat messages inside this container. -->
+            <div id="ai-chat" class="ai-chat" aria-live="polite"></div>
+
+            <form id="ai-chat-form" class="ai-chat-form">
+                <label for="ai-message">Your message</label>
+
+                <textarea
+                    id="ai-message"
+                    rows="3"
+                    placeholder="Type your problem here, or use the microphone..."
+                    required
+                ></textarea>
+
+                <div class="voice-controls">
+                    <button type="button" id="start-ai-mic" class="secondary-button">
+                        🎤 Speak
+                    </button>
+
+                    <button type="button" id="stop-ai-mic" class="secondary-button">
+                        ⏹ Stop
+                    </button>
+
+                    <button type="button" id="read-ai-answer" class="secondary-button">
+                        🔊 Read answer
+                    </button>
+                </div>
+
+                <p id="ai-voice-status" class="form-note" aria-live="polite">
+                    AI voice works when your browser supports speech.
+                </p>
+
+                <button type="submit" id="send-ai-message" class="primary-button">
+                    Ask AI
+                </button>
+            </form>
+        </section>
+
+        <footer class="page-footer">
+            <p>Speak Your Log <span>✦</span> Your growth, your pace.</p>
+        </footer>
+
+    </main>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
