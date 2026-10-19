@@ -1,0 +1,149 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weekly Progress Report | Speak Your Log</title>
+    <style>
+        :root {
+            color-scheme: dark;
+            --gold: #e7bd67;
+            --panel: #171717;
+            --muted: #b8b8b8;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            padding: 24px 16px 48px;
+            background: #090909;
+            color: #f5f5f5;
+            font-family: Arial, sans-serif;
+            line-height: 1.65;
+        }
+
+        main {
+            max-width: 850px;
+            margin: auto;
+        }
+
+        a { color: var(--gold); }
+
+        .top {
+            display: flex;
+            justify-content: space-between;
+            gap: 16px;
+            flex-wrap: wrap;
+            margin-bottom: 28px;
+        }
+
+        h1, h2 { line-height: 1.25; }
+
+        h1 { color: var(--gold); }
+
+        .card {
+            background: var(--panel);
+            border: 1px solid #383026;
+            border-radius: 16px;
+            padding: 22px;
+            margin: 18px 0;
+        }
+
+        .muted { color: var(--muted); }
+
+        .button {
+            display: inline-block;
+            border: 0;
+            border-radius: 10px;
+            padding: 13px 18px;
+            background: var(--gold);
+            color: #17120a;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            text-decoration: none;
+        }
+
+        .report {
+            overflow-wrap: anywhere;
+            white-space: pre-wrap;
+        }
+
+        .message {
+            padding: 12px;
+            border-radius: 8px;
+            background: #34251b;
+            color: #ffdba1;
+        }
+
+        footer {
+            margin-top: 30px;
+            color: var(--muted);
+            font-size: .9rem;
+        }
+    </style>
+</head>
+<body>
+<main>
+    <div class="top">
+        <a href="{{ url_for('dashboard') }}">← Back to Dashboard</a>
+        <a href="{{ url_for('logout') }}">Logout</a>
+    </div>
+
+    <h1>✦ Your Weekly Progress Report</h1>
+    <p class="muted">
+        Hello {{ user['name'] }}! Review your last seven days
+        and choose your next steps.
+    </p>
+
+    <section class="card">
+        <h2>Last 7 Days</h2>
+        <p>
+            Saved logs found:
+            <strong>{{ log_count }}</strong>
+        </p>
+        <p class="muted">
+            This report is based on your saved daily reflections,
+            not on unsaved chat messages.
+        </p>
+
+        {% if log_count > 0 %}
+        <form method="POST" action="{{ url_for('weekly_report') }}">
+            <button class="button" type="submit">
+                ✦ Generate My AI Report
+            </button>
+        </form>
+        {% else %}
+        <p class="muted">
+            Save a daily log first. Then return here to generate
+            your weekly report.
+        </p>
+        {% endif %}
+    </section>
+
+    {% if error_message %}
+    <div class="card message">{{ error_message }}</div>
+    {% endif %}
+
+    {% if report %}
+    <section class="card">
+        <h2>Your Report</h2>
+        <div class="report">{{ report }}</div>
+        <p class="muted">
+            Review the report and use the suggestions that fit your goals.
+        </p>
+        <button class="button" type="button"
+                onclick="window.print()">
+            Print / Save as PDF
+        </button>
+    </section>
+    {% endif %}
+
+    <footer>
+        Speak Your Log · Your growth, your pace.
+    </footer>
+</main>
+</body>
+</html>
